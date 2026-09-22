@@ -67,7 +67,7 @@ def evaluate_model(name, pipeline, x_train, x_test, y_train, y_test):
 def main():
     df = pd.read_csv(DATA_PATH)
 
-    # customerID lo puse solamentecomo un identificador, por eso no se usa para predecir
+    # customerID identifica al cliente, por eso no lo uso para entrenar el modelo
     x = df.drop(columns=["Churn", "customerID"])
     y = df["Churn"].map({"No": 0, "Yes": 1})
 
