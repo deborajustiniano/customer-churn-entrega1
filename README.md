@@ -1,67 +1,91 @@
 # Predicción de abandono de clientes
 
-## Integrantes
+## Integrante
 
 - Abigail Justiniano
 
 ## Descripción
 
-Este proyecto busca predecir si un cliente de una empresa de telecomunicaciones puede abandonar el servicio. Es un problema de clasificación binaria porque la variable `Churn` tiene dos posibles resultados: `Yes` o `No`.
+En este proyecto trabajé con datos de clientes de una empresa de telecomunicaciones. El objetivo es predecir si un cliente va a abandonar el servicio o no, usando la variable `Churn`.
 
-Para esta primera entrega se trabajó con el dataset histórico. El archivo de producción no se utilizó porque queda reservado para una etapa posterior de la materia.
+Para esta primera entrega utilicé solamente el archivo histórico, ya que es el que contiene el resultado real de `Churn`. Los archivos de producción y scoring quedan para una etapa posterior.
 
-## Datos
+## Análisis de los datos
 
-El dataset histórico tiene 7.043 registros y 21 columnas. Durante la exploración encontramos:
+El dataset histórico tiene 7.043 filas y 21 columnas.
 
-- 5.186 clientes con `Churn = No` y 1.857 con `Churn = Yes`.
-- 26 valores faltantes en `TotalCharges`.
-- Variables numéricas y categóricas.
-- `customerID` funciona como identificador, por eso se excluyó del entrenamiento.
+Durante el análisis encontré lo siguiente:
 
-Los datos se versionan con DVC y no se suben directamente a GitHub.
+- 5.186 clientes no abandonaron el servicio.
+- 1.857 clientes sí abandonaron el servicio.
+- Hay 26 valores faltantes en la columna `TotalCharges`.
+- `customerID` se usa solamente para identificar a cada cliente, por eso no se incluyó en el entrenamiento.
+- La cantidad de clientes que no abandonan es mayor que la cantidad que sí lo hace.
 
-## Preprocesamiento
+También observé que el abandono cambia según el tipo de contrato:
 
-El preprocesamiento forma parte de un `Pipeline` de scikit-learn para que se apliquen los mismos pasos durante el entrenamiento y en usos posteriores.
+- Contrato mensual: 38,73 % de abandono.
+- Contrato de un año: 14,97 %.
+- Contrato de dos años: 8,97 %.
 
-- En las variables numéricas se completan faltantes con la mediana y luego se aplica `StandardScaler`.
-- En las variables categóricas se completan faltantes con el valor más frecuente y se utiliza `OneHotEncoder`.
-- La división entre entrenamiento y prueba usa `random_state=42` y `stratify=y` para conservar la proporción de las clases.
+Los clientes que abandonaron también tenían, en promedio, menos antigüedad y cargos mensuales más altos.
 
-## Modelos comparados
+## Preparación de los datos
 
-Se comparan tres modelos:
+Separé las columnas numéricas de las categóricas para poder tratarlas de manera diferente.
 
-1. `DummyClassifier`, usado como baseline.
-2. `LogisticRegression`, como modelo lineal.
-3. `RandomForestClassifier`, como modelo basado en árboles.
+Para las columnas numéricas:
 
-No se toma accuracy como única medida. Se comparan precision, recall, F1 y ROC-AUC. En este problema es importante mirar especialmente recall, porque un falso negativo significa considerar estable a un cliente que realmente iba a abandonar. En ese caso la empresa perdería la oportunidad de hacer una acción de retención.
+- Completé los valores faltantes usando la mediana.
+- Apliqué `StandardScaler` para escalar los valores.
 
-## Resultados obtenidos
+Para las columnas categóricas:
+
+- Completé los faltantes usando el valor más frecuente.
+- Apliqué `OneHotEncoder` para convertir las categorías en valores que puedan usar los modelos.
+
+Todo este procesamiento se encuentra dentro de un pipeline de scikit-learn. De esta manera, se aplican siempre los mismos pasos antes de usar el modelo.
+
+Los datos se dividieron en entrenamiento y prueba. Usé `random_state=42` para poder repetir el resultado y `stratify=y` para conservar aproximadamente la misma proporción de clientes con y sin churn.
+
+## Modelos probados
+
+Probé tres modelos:
+
+1. `DummyClassifier`, como resultado básico de referencia.
+2. `LogisticRegression`.
+3. `RandomForestClassifier`.
+
+No comparé los modelos solamente por accuracy, porque el dataset tiene más clientes sin abandono que con abandono. También revisé precision, recall, F1 y ROC-AUC.
+
+## Resultados
 
 | Modelo | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---:|---:|---:|---:|---:|
 | Logistic Regression | 0.7942 | 0.6627 | 0.4489 | 0.5353 | 0.8120 |
-| Random Forest | 0.7814 | 0.6416 | 0.3898 | 0.4849 | 0.7875 |
+| Random Forest | 0.7864 | 0.6578 | 0.3978 | 0.4958 | 0.7896 |
 | Dummy Classifier | 0.7360 | 0.0000 | 0.0000 | 0.0000 | 0.5000 |
 
-La regresión logística fue el modelo elegido porque consiguió el ROC-AUC más alto y también superó al random forest en recall y F1. El baseline obtuvo una accuracy que parece alta por el desbalance de clases, pero no detectó ningún caso positivo. Esto muestra por qué no alcanza con mirar solamente accuracy.
+El modelo elegido fue regresión logística, porque tuvo el ROC-AUC más alto y también obtuvo mejores resultados de recall y F1 que random forest.
 
-En el EDA también observamos que los clientes con contrato mes a mes tienen un porcentaje de abandono de 38,73%, mientras que en los contratos de un año es 14,97% y en los de dos años es 8,97%. Además, los clientes que abandonaron tenían en promedio menos antigüedad y cargos mensuales más altos.
+El resultado del `DummyClassifier` muestra por qué no conviene mirar solamente accuracy. Aunque consiguió 73,60 % de accuracy, no detectó ningún cliente que fuera a abandonar el servicio.
 
-## Estructura principal
+El recall también es importante en este caso, porque un falso negativo representa a un cliente que el modelo considera estable, pero que en realidad va a abandonar. Esto puede hacer que la empresa no llegue a realizar una acción de retención a tiempo.
+
+## Estructura del proyecto
 
 ```text
 customer-churn-entrega1/
 ├── data/
+│   └── raw/
 ├── metadata/
 ├── models/
 ├── reports/
 ├── src/
-│   ├── data/eda.py
-│   └── training/train.py
+│   ├── data/
+│   │   └── eda.py
+│   └── training/
+│       └── train.py
 ├── .gitignore
 ├── dvc.yaml
 ├── requirements.txt
@@ -70,21 +94,24 @@ customer-churn-entrega1/
 
 ## Instalación
 
+Crear y activar el entorno virtual:
+
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
+```
+
+Instalar las dependencias:
+
+```bash
 pip install -r requirements.txt
 ```
 
-En Windows, para activar el entorno:
+## Descargar los datos
 
-```bash
-.venv\Scripts\activate
-```
+Los datos y los resultados generados se versionan con DVC y se almacenan en DagsHub. No se suben directamente a GitHub.
 
-## Recuperar los datos
-
-Después de clonar el repositorio y configurar el acceso al remote de DVC:
+Después de clonar el repositorio y configurar el acceso al almacenamiento remoto, se pueden descargar con:
 
 ```bash
 dvc pull
@@ -92,24 +119,33 @@ dvc pull
 
 ## Ejecutar el proyecto
 
-Se puede ejecutar todo el flujo con:
+Para ejecutar todo el flujo:
 
 ```bash
 dvc repro
 ```
 
-También se pueden ejecutar las partes por separado:
+También se pueden ejecutar las etapas por separado:
 
 ```bash
 python -m src.data.eda
 python -m src.training.train
 ```
 
-Los resultados quedan guardados en `reports/` y el pipeline seleccionado en `models/`.
+El análisis exploratorio queda guardado en `reports/eda_summary.txt`, la comparación de los modelos en `reports/model_comparison.csv` y el pipeline seleccionado en `models/churn_pipeline.joblib`.
 
-## Decisiones y limitaciones
+## Uso de DVC
 
-- Se utilizaron modelos simples porque son los solicitados para esta etapa y permiten comparar un baseline, un modelo lineal y uno de árboles.
-- El modelo se selecciona inicialmente según ROC-AUC. También se revisan recall y F1 por el costo de no detectar a un cliente con intención de abandonar.
-- No se utilizó el dataset de producción para entrenar ni mejorar el modelo.
-- MLflow y Model Registry no se incluyeron porque todavía no fueron desarrollados en clase y se incorporarán en una entrega posterior.
+DVC se utilizó para:
+
+- Versionar el dataset histórico.
+- Definir las etapas de análisis y entrenamiento.
+- Guardar el modelo y los resultados.
+- Poder reproducir el proyecto con `dvc repro`.
+- Almacenar los archivos pesados en DagsHub.
+
+## Limitaciones
+
+En esta entrega se hizo una primera comparación con modelos simples. Todavía no se realizó ajuste de hiperparámetros ni se probó el modelo con datos nuevos de producción.
+
+Tampoco se incorporó MLflow porque todavía no fue trabajado en clase y queda para una entrega posterior.
