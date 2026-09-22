@@ -25,14 +25,14 @@ stages:
       size: 982638
     - path: src/training/train.py
       hash: md5
-      md5: ca3e7c22756f83ccc5ddd6a5fc55e0e6
-      size: 4221
+      md5: 93f9514a4aaa6d551d15afe14abc8507
+      size: 4233
     outs:
     - path: models/churn_pipeline.joblib
       hash: md5
-      md5: cc43ea82000ff2b247da65381135315b
-      size: 8506
+      md5: 6f9b3917dc71150548fd210f1ab6bc62
+      size: 9799
     - path: reports/model_comparison.csv
       hash: md5
-      md5: 5fdd42b409ac168fbe0b722d564c0938
+      md5: 6fbd462d3d81f539dbf421407024a4b0
       size: 192
