@@ -1,0 +1,38 @@
+schema: '2.0'
+stages:
+  eda:
+    cmd: python -m src.data.eda
+    deps:
+    - path: data/raw/customer_churn_historical.csv
+      hash: md5
+      md5: 178571792c566f067e3d16b5fb913026
+      size: 982638
+    - path: src/data/eda.py
+      hash: md5
+      md5: ca3dbbe64f9c338f3eb866624179b306
+      size: 1529
+    outs:
+    - path: reports/eda_summary.txt
+      hash: md5
+      md5: d4afb6dcda234625ca4254a41dcd0dc7
+      size: 648
+  train:
+    cmd: python -m src.training.train
+    deps:
+    - path: data/raw/customer_churn_historical.csv
+      hash: md5
+      md5: 178571792c566f067e3d16b5fb913026
+      size: 982638
+    - path: src/training/train.py
+      hash: md5
+      md5: ca3e7c22756f83ccc5ddd6a5fc55e0e6
+      size: 4221
+    outs:
+    - path: models/churn_pipeline.joblib
+      hash: md5
+      md5: cc43ea82000ff2b247da65381135315b
+      size: 8506
+    - path: reports/model_comparison.csv
+      hash: md5
+      md5: 5fdd42b409ac168fbe0b722d564c0938
+      size: 192

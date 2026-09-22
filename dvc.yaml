@@ -1,0 +1,18 @@
+stages:
+  eda:
+    cmd: python -m src.data.eda
+    deps:
+      - data/raw/customer_churn_historical.csv
+      - src/data/eda.py
+    outs:
+      - reports/eda_summary.txt
+
+  train:
+    cmd: python -m src.training.train
+    deps:
+      - data/raw/customer_churn_historical.csv
+      - src/training/train.py
+    outs:
+      - models/churn_pipeline.joblib
+    metrics:
+      - reports/model_comparison.csv

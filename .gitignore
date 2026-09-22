@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+
+# Los datos que no se usan todavía no se suben a Git.
+/data/production/
+/data/scoring/
+/models/
