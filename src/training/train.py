@@ -1,6 +1,10 @@
 from pathlib import Path
+import os
 
 import joblib
+import mlflow
+import mlflow.sklearn
+from mlflow.models import infer_signature
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
@@ -65,6 +69,21 @@ def evaluate_model(name, pipeline, x_train, x_test, y_train, y_test):
 
 
 def main():
+    required_variables = (
+        "MLFLOW_TRACKING_URI",
+        "MLFLOW_TRACKING_USERNAME",
+        "MLFLOW_TRACKING_PASSWORD",
+    )
+    missing_variables = [name for name in required_variables if not os.environ.get(name)]
+    if missing_variables:
+        raise ValueError("Faltan variables de entorno: " + ", ".join(missing_variables))
+
+    # MLflow toma el usuario y la contraseña del entorno.
+    tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
+    mlflow.set_tracking_uri(tracking_uri)
+    mlflow.set_registry_uri(tracking_uri)
+    mlflow.set_experiment("customer-churn")
+
     df = pd.read_csv(DATA_PATH)
 
     # customerID identifica al cliente, por eso no lo uso para entrenar el modelo
@@ -94,6 +113,7 @@ def main():
 
     results = []
     trained_pipelines = {}
+    run_ids = {}
 
     for name, model in models.items():
         pipeline = Pipeline(
@@ -102,9 +122,25 @@ def main():
                 ("model", model),
             ]
         )
-        metrics, trained_pipeline = evaluate_model(
-            name, pipeline, x_train, x_test, y_train, y_test
-        )
+        with mlflow.start_run(run_name=name) as run:
+            mlflow.log_param("model", name)
+            mlflow.log_params(model.get_params())
+            mlflow.log_params({"test_size": 0.20, "split_random_state": RANDOM_STATE})
+            metrics, trained_pipeline = evaluate_model(
+                name, pipeline, x_train, x_test, y_train, y_test
+            )
+            mlflow.log_metrics({key: value for key, value in metrics.items() if key != "model"})
+            # La entrada conserva las 19 columnas originales, antes de procesarlas.
+            signature = infer_signature(x_test, trained_pipeline.predict(x_test))
+            input_example = x_test.head(3).copy()
+            # Guardo también el preprocesamiento para poder repetir la predicción.
+            mlflow.sklearn.log_model(
+                trained_pipeline,
+                artifact_path="pipeline",
+                signature=signature,
+                input_example=input_example,
+            )
+            run_ids[name] = run.info.run_id
         results.append(metrics)
         trained_pipelines[name] = trained_pipeline
 
@@ -121,9 +157,16 @@ def main():
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(trained_pipelines[selected_name], MODEL_PATH)
 
+    # Registro el pipeline de la ejecución ganadora, sin volver a entrenarlo.
+    registered_model = mlflow.register_model(
+        model_uri=f"runs:/{run_ids[selected_name]}/pipeline",
+        name="customer-churn",
+    )
+
     print(results_df.to_string(index=False))
     print(f"\nModelo seleccionado: {selected_name}")
     print(f"Pipeline guardado en: {MODEL_PATH}")
+    print(f"Versión registrada en MLflow: {registered_model.version}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,27 @@
+# Solo estos archivos forman parte del contexto de construcción.
+**
+!requirements-api.txt
+!src/
+!src/__init__.py
+!src/api/
+!src/api/*.py
+!models/
+!models/churn_pipeline.joblib
+
+# Exclusiones explícitas para que no entren configuraciones ni datos locales.
+.env
+.env.*
+.dvc/
+.git/
+.venv/
+venv/
+data/
+metadata/
+reports/
+tests/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.aws/
+**/*.pem
+**/*.key
